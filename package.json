@@ -1,6 +1,11 @@
 {
   "name": "llm-api-key-manager",
   "version": "0.0.1",
+  "author": {
+    "name": "liaohui5",
+    "email": "secretx500@gmail.com",
+    "url": "https://github.com/liaohui5"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
