@@ -561,7 +561,7 @@ const title = computed(() =>
   props.mode === "create" ? "添加新的API密钥" : "修改API密钥",
 );
 
-const emptyDraft = (): ItemDraft => ({
+const emptyDraft = (): DraftState => ({
   provider: "",
   api_url: "",
   api_token: "",
@@ -569,7 +569,10 @@ const emptyDraft = (): ItemDraft => ({
   remark: "",
 });
 
-const draft = reactive<ItemDraft>(emptyDraft());
+/** 草稿本地状态：全部字段必填 string（含 remark），避免对可选字段直接 .trim() 的类型错误 */
+type DraftState = Record<KeyItemField, string>;
+
+const draft = reactive<DraftState>(emptyDraft());
 const errors = ref<KeyItemErrors>({});
 
 function clearErrors(): void {
@@ -887,7 +890,7 @@ git commit -m "feat: wire up create and edit key item dialogs"
 - 测试：vitest（仅校验纯函数，node 环境，`tests/unit/validation.test.ts`），脚本 `pnpm test`
 - 包管理：pnpm（`pnpm-lock.yaml`；`pnpm-workspace.yaml` 仅 `allowBuilds: vue-demi: true`）
 - 路径别名：`@` → `src/`（`vite.config.ts` `resolve.alias` `"@": "/src/"`，与 `tsconfig.json` / `tsconfig.app.json` 的 paths `"@/*": ["./src/*"]` 一致）
-- Git：当前功能分支 `dev`，已完成添加 / 修改功能
+- Git：功能在 `dev` 分支开发（计划文档见 `docs/superpowers/plans/`）
 
 ## 常用命令
 
