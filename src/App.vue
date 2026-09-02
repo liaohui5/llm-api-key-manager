@@ -93,7 +93,7 @@ const __ITEMS_STORAGE_KEY__ = "__llm_api_key_items__";
 const items = useLocalStorage<Item[]>(__ITEMS_STORAGE_KEY__, [
   {
     id: "905fd4d1-38a4-48b5-95e5-2f0122dfd902",
-    provider: "新疆公益API",
+    provider: "公益API",
     api_url: "https://api.hcnsec.cn/v1",
     api_token: "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     docs_url: "https://api.hcnsec.cn",
