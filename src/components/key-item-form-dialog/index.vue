@@ -85,11 +85,11 @@ watch(
 );
 
 const fieldGroups: { field: KeyItemField; label: string; placeholder: string }[] = [
-  { field: "provider", label: "提供商", placeholder: "如：新疆公益API" },
-  { field: "api_url", label: "接口地址", placeholder: "https://api.example.com/v1" },
+  { field: "provider", label: "提供商", placeholder: "如: deepseek" },
+  { field: "api_url", label: "接口地址", placeholder: "https://api.deepseek.com/v1" },
   { field: "api_token", label: "接口密钥", placeholder: "sk-..." },
-  { field: "docs_url", label: "文档地址（选填）", placeholder: "https://..." },
-  { field: "remark", label: "备注说明（选填）", placeholder: "" },
+  { field: "docs_url", label: "文档地址(选填)", placeholder: "https://..." },
+  { field: "remark", label: "备注说明(选填)", placeholder: "" },
 ];
 
 function clearError(field: KeyItemField): void {
