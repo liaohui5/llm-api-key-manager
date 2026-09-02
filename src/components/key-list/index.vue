@@ -31,7 +31,7 @@
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger as-child>
-                  <Button variant="ghost">
+                  <Button variant="ghost" @click="handleCopy(item.api_url)">
                     <IconCopy />
                   </Button>
                 </TooltipTrigger>
@@ -43,12 +43,12 @@
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger as-child>
-                  <Button variant="ghost">
+                  <Button variant="ghost" @click="handleCopy(item.api_url, true)">
                     <IconCopy />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>复制 /chat/completions 接口地址</p>
+                  <p>复制 `/chat/completions` 后缀地址</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -60,7 +60,7 @@
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger as-child>
-                  <Button variant="ghost">
+                  <Button variant="ghost" @click="handleCopy(item.api_token)">
                     <IconCopy />
                   </Button>
                 </TooltipTrigger>
@@ -135,6 +135,7 @@ function onlyShow15Chars(str: string): string {
 
 const emits = defineEmits<{
   (e: "delete", id: string): void;
+  (e: "copy", id: string): void;
   (e: "edit", item: Item): void;
 }>();
 
@@ -144,5 +145,10 @@ function handleDelete(item: Item) {
 
 function handleEdit(item: Item) {
   emits("edit", item);
+}
+
+function handleCopy(str: string, isWithSuffix: boolean = false) {
+  const slash = str.endsWith("/") ? "" : "/";
+  isWithSuffix ? emits("copy", `${str}${slash}chat/completions`) : emits("copy", str);
 }
 </script>

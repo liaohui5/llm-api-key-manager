@@ -33,7 +33,7 @@
     />
 
     <!-- llm api items table -->
-    <KeyList :items="items" @delete="deleteKeyItem" @edit="showUpdateForm" />
+    <KeyList :items="items" @copy="handleCopy" @delete="deleteKeyItem" @edit="showUpdateForm" />
 
     <!-- create form dialog -->
     <KeyItemFormDialog
@@ -57,9 +57,13 @@
       <DialogContent class="sm:max-w-md">
         <DialogTitle>{{ resultTitle }}</DialogTitle>
         <p v-if="importResult && importResult.kind === 'success'" class="text-sm text-foreground">
-          新增 {{ importResult.added }} 条，更新 {{ importResult.updated }} 条，跳过 {{ importResult.skipped }} 条
+          新增 {{ importResult.added }} 条，更新 {{ importResult.updated }} 条，跳过
+          {{ importResult.skipped }} 条
         </p>
-        <p v-else-if="importResult && importResult.kind === 'error'" class="text-sm text-destructive">
+        <p
+          v-else-if="importResult && importResult.kind === 'error'"
+          class="text-sm text-destructive"
+        >
           {{ importResult.message }}
         </p>
         <DialogFooter>
@@ -79,18 +83,11 @@ import KeyItemFormDialog from "@/components/key-item-form-dialog/index.vue";
 import { IconInfoCircle } from "@tabler/icons-vue";
 import { Button } from "@/components/ui/button/index.ts";
 import { Alert, AlertTitle } from "@/components/ui/alert";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 import { type Item, type ItemDraft } from "@/types";
-import {
-  mergeItems,
-  parseKeyItemsFile,
-  serializeItems,
-} from "@/lib/key-item-file";
+import { mergeItems, parseKeyItemsFile, serializeItems, exportFilename } from "@/lib/key-item-file";
+import { downloadBlob } from "@/lib/download";
+import copy2clipboard from "copy-to-clipboard";
 
 const __ITEMS_STORAGE_KEY__ = "__llm_api_key_items__";
 const items = useLocalStorage<Item[]>(__ITEMS_STORAGE_KEY__, [
@@ -191,22 +188,17 @@ async function onFileSelected(event: Event) {
 }
 
 function exportAndDownload() {
-  const blob = new Blob([serializeItems(items.value)], {
-    type: "application/json",
-  });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = exportFilename();
-  anchor.click();
-  URL.revokeObjectURL(url);
+  const text = serializeItems(items.value);
+  const blob = new Blob([text], { type: "application/json" });
+  downloadBlob(blob, exportFilename());
 }
 
-function exportFilename(): string {
-  const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const date = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
-  const time = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-  return `llm-api-keys-${date}-${time}.json`;
+async function handleCopy(text: string) {
+  try {
+    await copy2clipboard(text);
+  } catch (error) {
+    console.error(">>> copy failed");
+    console.error(error);
+  }
 }
 </script>
