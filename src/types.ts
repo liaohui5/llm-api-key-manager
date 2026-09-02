@@ -6,3 +6,5 @@ export interface Item {
   docs_url: string;
   remark?: string;
 }
+
+export type ItemDraft = Omit<Item, "id">;
