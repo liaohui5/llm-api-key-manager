@@ -6,8 +6,8 @@
         <TableHead>提供商</TableHead>
         <TableHead>接口地址</TableHead>
         <TableHead>接口密钥</TableHead>
-        <TableHead>文档地址</TableHead>
         <TableHead>备注说明</TableHead>
+        <TableHead>文档地址</TableHead>
         <TableHead>操作</TableHead>
       </TableRow>
     </TableHeader>
@@ -18,7 +18,16 @@
         <TableCell>{{ item.provider }}</TableCell>
         <TableCell>
           <div class="flex items-center">
-            <span class="mr-1">{{ onlyShow15Chars(item.api_url) }}</span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <span class="mr-1">{{ onlyShow15Chars(item.api_url) }}</span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{{ item.api_url }}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger as-child>
@@ -31,7 +40,6 @@
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger as-child>
@@ -63,16 +71,15 @@
             </TooltipProvider>
           </div>
         </TableCell>
-        <TableCell>
-          <a :href="item.docs_url" class="text-blue-500" target="_blank">新标签页打开</a>
-        </TableCell>
         <TableCell>{{ item.remark }}</TableCell>
         <TableCell>
+          <Button variant="link" v-if="item.docs_url">
+            <a :href="item.docs_url" class="text-blue-500" target="_blank">新标签页打开</a>
+          </Button>
+        </TableCell>
+        <TableCell>
           <div class="flex justify-around">
-            <Button
-              class="hover:cursor-pointer"
-              variant="outline"
-              @click="handleEdit(item)"
+            <Button class="hover:cursor-pointer" variant="outline" @click="handleEdit(item)"
               >修改</Button
             >
 

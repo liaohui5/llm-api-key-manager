@@ -49,7 +49,13 @@ describe("validateKeyItemDraft", () => {
   });
 
   it("api_url 非法格式时报错", () => {
-    for (const bad of ["not-a-url", "example.com/v1", "ftp://example.com/v1", "https://", "http://"]) {
+    for (const bad of [
+      "not-a-url",
+      "example.com/v1",
+      "ftp://example.com/v1",
+      "https://",
+      "http://",
+    ]) {
       const errors = validateKeyItemDraft(draft({ api_url: bad }));
       expect(errors.api_url).toBe("接口地址需为合法的 http/https URL");
     }

@@ -55,11 +55,15 @@ type DraftState = Record<KeyItemField, string>;
 const draft = reactive<DraftState>(emptyDraft());
 const errors = ref<KeyItemErrors>({});
 
+/** 一次性提交守卫：reka 关闭动画期间按钮仍可触发保存，防止创建模式重复入库 */
+const submitted = ref(false);
+
 function clearErrors(): void {
   errors.value = {};
 }
 
 function resetDraft(): void {
+  submitted.value = false;
   clearErrors();
   if (props.mode === "edit" && props.item) {
     draft.provider = props.item.provider;
@@ -97,6 +101,7 @@ function clearError(field: KeyItemField): void {
 }
 
 function handleSubmit(): void {
+  if (submitted.value) return;
   const payload: ItemDraft = {
     provider: draft.provider.trim(),
     api_url: draft.api_url.trim(),
@@ -110,6 +115,7 @@ function handleSubmit(): void {
     return;
   }
   emit("submit", payload);
+  submitted.value = true;
   dialogOpen.value = false;
 }
 
