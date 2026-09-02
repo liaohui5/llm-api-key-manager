@@ -69,7 +69,12 @@
         <TableCell>{{ item.remark }}</TableCell>
         <TableCell>
           <div class="flex justify-around">
-            <Button class="hover:cursor-pointer" variant="outline">修改</Button>
+            <Button
+              class="hover:cursor-pointer"
+              variant="outline"
+              @click="handleEdit(item)"
+              >修改</Button
+            >
 
             <Popover>
               <PopoverTrigger>
@@ -123,9 +128,14 @@ function onlyShow15Chars(str: string): string {
 
 const emits = defineEmits<{
   (e: "delete", id: string): void;
+  (e: "edit", item: Item): void;
 }>();
 
 function handleDelete(item: Item) {
   emits("delete", item.id);
+}
+
+function handleEdit(item: Item) {
+  emits("edit", item);
 }
 </script>

@@ -2,23 +2,37 @@
   <div class="w-8/10 mx-auto">
     <h2 class="text-2xl text-center py-4">大模型提供商API密钥管理</h2>
     <div class="flex items-center justify-end py-2">
-      <Button variant="outline" class="hover:cursor-pointer">添加新的API密钥</Button>
+      <Button variant="outline" class="hover:cursor-pointer" @click="showCreateForm">
+        添加新的API密钥
+      </Button>
     </div>
 
-    <KeyList :items="items" @delete="deleteKeyItem" />
+    <KeyList :items="items" @delete="deleteKeyItem" @edit="showUpdateForm" />
 
-    <!-- <CreateKeyItem /> -->
-    <!-- <UpdateKeyItem /> -->
+    <KeyItemFormDialog
+      mode="create"
+      :open="createOpen"
+      @update:open="hideCreateForm"
+      @submit="createKeyItem"
+    />
+    <KeyItemFormDialog
+      mode="edit"
+      :open="editItem !== null"
+      :item="editItem"
+      @update:open="hideUpdateForm"
+      @submit="updateKeyItem"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-// import CreateKeyItem from "@/components/create-key-item/index.vue";
-// import UpdateKeyItem from "@/components/update-key-item/index.vue";
-import KeyList from "@/components/key-list/index.vue";
-import { Button } from "@/components/ui/button/index.ts";
+import { ref } from "vue";
+import { v4 as uuidv4 } from "uuid";
 import { useLocalStorage } from "@vueuse/core";
-import { type Item } from "@/types";
+import KeyList from "@/components/key-list/index.vue";
+import KeyItemFormDialog from "@/components/key-item-form-dialog/index.vue";
+import { Button } from "@/components/ui/button/index.ts";
+import { type Item, type ItemDraft } from "@/types";
 
 const __ITEM_KEY__ = "__item_storage_key__";
 const items = useLocalStorage<Item[]>(__ITEM_KEY__, [
@@ -32,17 +46,36 @@ const items = useLocalStorage<Item[]>(__ITEM_KEY__, [
   },
 ]);
 
-function showCreateForm() {}
+const createOpen = ref(false);
+const editItem = ref<Item | null>(null);
 
-function hideCreateForm() {}
+function showCreateForm() {
+  createOpen.value = true;
+}
 
-function createKeyItem() {}
+function hideCreateForm() {
+  createOpen.value = false;
+}
 
-function showUpdateForm() {}
+function showUpdateForm(item: Item) {
+  editItem.value = item;
+}
 
-function hideUpdateForm() {}
+function hideUpdateForm() {
+  editItem.value = null;
+}
 
-function updateKeyItem() {}
+function createKeyItem(draft: ItemDraft) {
+  items.value.push({ ...draft, id: uuidv4() });
+}
+
+function updateKeyItem(draft: ItemDraft) {
+  const targetId = editItem.value?.id;
+  if (!targetId) return;
+  items.value = items.value.map((item) =>
+    item.id === targetId ? { ...draft, id: targetId } : item,
+  );
+}
 
 function deleteKeyItem(id: string) {
   items.value = items.value.filter((item) => item.id !== id);
