@@ -24,6 +24,14 @@
       </Button>
     </div>
 
+    <input
+      ref="fileInput"
+      type="file"
+      accept=".json,application/json"
+      class="hidden"
+      @change="onFileSelected"
+    />
+
     <!-- llm api items table -->
     <KeyList :items="items" @delete="deleteKeyItem" @edit="showUpdateForm" />
 
@@ -43,6 +51,22 @@
       @update:open="hideUpdateForm"
       @submit="updateKeyItem"
     />
+
+    <!-- import result dialog -->
+    <Dialog v-model:open="resultOpen">
+      <DialogContent class="sm:max-w-md">
+        <DialogTitle>{{ resultTitle }}</DialogTitle>
+        <p v-if="importResult && importResult.kind === 'success'" class="text-sm text-foreground">
+          新增 {{ importResult.added }} 条，更新 {{ importResult.updated }} 条，跳过 {{ importResult.skipped }} 条
+        </p>
+        <p v-else-if="importResult && importResult.kind === 'error'" class="text-sm text-destructive">
+          {{ importResult.message }}
+        </p>
+        <DialogFooter>
+          <Button variant="outline" @click="resultOpen = false">关闭</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
@@ -55,7 +79,18 @@ import KeyItemFormDialog from "@/components/key-item-form-dialog/index.vue";
 import { IconInfoCircle } from "@tabler/icons-vue";
 import { Button } from "@/components/ui/button/index.ts";
 import { Alert, AlertTitle } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { type Item, type ItemDraft } from "@/types";
+import {
+  mergeItems,
+  parseKeyItemsFile,
+  serializeItems,
+} from "@/lib/key-item-file";
 
 const __ITEMS_STORAGE_KEY__ = "__llm_api_key_items__";
 const items = useLocalStorage<Item[]>(__ITEMS_STORAGE_KEY__, [
@@ -72,6 +107,22 @@ const items = useLocalStorage<Item[]>(__ITEMS_STORAGE_KEY__, [
 const createOpen = ref(false);
 const editItem = ref<Item | null>(null);
 const hasEditItem = computed(() => editItem.value !== null);
+
+type ImportResult =
+  | { kind: "success"; added: number; updated: number; skipped: number }
+  | { kind: "error"; message: string };
+
+const fileInput = ref<HTMLInputElement | null>(null);
+const importResult = ref<ImportResult | null>(null);
+const resultOpen = computed({
+  get: () => importResult.value !== null,
+  set: (open: boolean) => {
+    if (!open) importResult.value = null;
+  },
+});
+const resultTitle = computed(() =>
+  importResult.value?.kind === "success" ? "导入结果" : "导入失败",
+);
 
 function showCreateForm() {
   createOpen.value = true;
@@ -106,10 +157,56 @@ function deleteKeyItem(id: string) {
 }
 
 function importJson() {
-  // 导入JSON数据并验证(过滤掉不符合 Item)的数据
+  fileInput.value?.click();
+}
+
+async function onFileSelected(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  input.value = ""; // 允许重复选择同一文件
+
+  let text: string;
+  try {
+    text = await file.text();
+  } catch {
+    importResult.value = { kind: "error", message: "读取文件失败" };
+    return;
+  }
+
+  const outcome = parseKeyItemsFile(text);
+  if (!outcome.ok) {
+    importResult.value = { kind: "error", message: outcome.error };
+    return;
+  }
+
+  const merged = mergeItems(items.value, outcome.validItems);
+  items.value = merged.items;
+  importResult.value = {
+    kind: "success",
+    added: merged.added,
+    updated: merged.updated,
+    skipped: outcome.skipped,
+  };
 }
 
 function exportAndDownload() {
-  // TODO: 导出到本地 -> 触发浏览器下载
+  const blob = new Blob([serializeItems(items.value)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = exportFilename();
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportFilename(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const date = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+  const time = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  return `llm-api-keys-${date}-${time}.json`;
 }
 </script>
