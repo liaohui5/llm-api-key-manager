@@ -58,6 +58,13 @@
       @submit="updateKeyItem"
     />
 
+    <!-- test form dialog -->
+    <TestFormDialog
+      :open="hasTestItem"
+      :item="testItem"
+      @update:open="hideTestForm"
+    />
+
     <!-- import result dialog -->
     <Dialog v-model:open="resultOpen">
       <DialogContent class="sm:max-w-md">
@@ -86,6 +93,7 @@ import { v4 as uuidv4 } from "uuid";
 import { useLocalStorage } from "@vueuse/core";
 import KeyList from "@/components/key-list/index.vue";
 import KeyItemFormDialog from "@/components/key-item-form-dialog/index.vue";
+import TestFormDialog from "@/components/test-form-dialog/index.vue";
 import { IconInfoCircle } from "@tabler/icons-vue";
 import { Button } from "@/components/ui/button/index.ts";
 import { Alert, AlertTitle } from "@/components/ui/alert";
@@ -110,6 +118,8 @@ const items = useLocalStorage<Item[]>(__ITEMS_STORAGE_KEY__, [
 const createOpen = ref(false);
 const editItem = ref<Item | null>(null);
 const hasEditItem = computed(() => editItem.value !== null);
+const testItem = ref<Item | null>(null);
+const hasTestItem = computed(() => testItem.value !== null);
 
 type ImportResult =
   | { kind: "success"; added: number; updated: number; skipped: number }
@@ -209,6 +219,10 @@ async function handleCopy(text: string) {
 }
 
 function showTestForm(item: Item) {
-  // ToDo:
+  testItem.value = item;
+}
+
+function hideTestForm() {
+  testItem.value = null;
 }
 </script>
