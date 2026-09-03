@@ -33,7 +33,13 @@
     />
 
     <!-- llm api items table -->
-    <KeyList :items="items" @copy="handleCopy" @delete="deleteKeyItem" @edit="showUpdateForm" />
+    <KeyList 
+      :items="items"
+      @copy="handleCopy"
+      @delete="deleteKeyItem"
+      @edit="showUpdateForm"
+      @test="showTestForm"
+    />
 
     <!-- create form dialog -->
     <KeyItemFormDialog
@@ -200,5 +206,9 @@ async function handleCopy(text: string) {
     console.error(">>> copy failed");
     console.error(error);
   }
+}
+
+function showTestForm(item: Item) {
+  // ToDo:
 }
 </script>

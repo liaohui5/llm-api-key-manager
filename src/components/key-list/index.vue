@@ -83,6 +83,10 @@
               >修改</Button
             >
 
+            <Button class="hover:cursor-pointer" variant="outline" @click="handleTest(item)"
+              >测试</Button
+            >
+
             <Popover>
               <PopoverTrigger>
                 <Button class="hover:cursor-pointer" variant="destructive">删除</Button>
@@ -137,6 +141,7 @@ const emits = defineEmits<{
   (e: "delete", id: string): void;
   (e: "copy", id: string): void;
   (e: "edit", item: Item): void;
+  (e: "test", item: Item): void;
 }>();
 
 function handleDelete(item: Item) {
@@ -150,5 +155,9 @@ function handleEdit(item: Item) {
 function handleCopy(str: string, isWithSuffix: boolean = false) {
   const slash = str.endsWith("/") ? "" : "/";
   isWithSuffix ? emits("copy", `${str}${slash}chat/completions`) : emits("copy", str);
+}
+
+function handleTest(item: Item) {
+  emits("test", item);
 }
 </script>
