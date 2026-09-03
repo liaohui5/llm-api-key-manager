@@ -59,3 +59,9 @@ Temporary Items
 ### ai agent ###
 .supperpowers
 docs/supperpowers
+.superpowers
+docs/superpowers
+
+# git worktrees
+.worktrees
+worktrees
