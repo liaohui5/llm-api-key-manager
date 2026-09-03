@@ -1,4 +1,102 @@
+<template>
+  <Dialog v-model:open="dialogOpen">
+    <DialogContent class="max-w-1/3!">
+      <DialogTitle>测试 API 密钥</DialogTitle>
+
+      <Alert class="w-full">
+        <IconInfoCircle />
+        <AlertTitle>该测试从浏览器发起请求,报错可能是CORS错误,不一定是密钥有误</AlertTitle>
+      </Alert>
+
+      <form class="flex flex-col gap-3.5" @submit.prevent="handleTest">
+        <!-- api_url 只读 -->
+        <div class="flex flex-col gap-1.5">
+          <Label>接口地址(只读)</Label>
+          <Input :model-value="item?.api_url ?? ''" readonly class="opacity-70" />
+        </div>
+
+        <!-- api_token 只读 -->
+        <div class="flex flex-col gap-1.5">
+          <Label>接口密钥(只读)</Label>
+          <Input :model-value="item?.api_token ?? ''" type="password" readonly class="opacity-70" />
+        </div>
+
+        <!-- model_name: 自动获取成功用 select，否则用 input -->
+        <div class="flex flex-col gap-1.5">
+          <div class="flex items-center justify-between">
+            <Label>模型名称</Label>
+
+            <!-- 右上角：自动获取模型文字按钮/查看文档文字按钮 -->
+            <div>
+              <Button type="button" variant="link" size="xs" class="h-auto mx-1"
+                :disabled="state.modelsStatus === 'loading'" @click="fetchModels">
+                {{ state.modelsStatus === "loading" ? "获取中..." : "自动获取" }}
+              </Button>
+
+              <Button v-if="item?.docs_url" type="button" variant="link" size="xs" class="h-auto p-0">
+                <a :href="item.docs_url" target="_blank" rel="noopener noreferrer"
+                  class="text-xs text-primary hover:opacity-80">
+                  <span>查看文档</span>
+                </a>
+              </Button>
+            </div>
+          </div>
+
+          <!-- 获取成功且有模型：用 select 选择 -->
+          <Select v-if="state.modelsStatus === 'success' && state.models.length > 0" v-model="state.modelName">
+            <SelectTrigger class="w-full">
+              <SelectValue placeholder="请选择模型" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="m in state.models" :key="m" :value="m">
+                {{ m }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
+          <!-- 获取失败或未获取：手动填写 input -->
+          <Input v-else v-model="state.modelName" placeholder="请输入模型名称，如 gpt-3.5-turbo" />
+
+          <!-- 获取失败提示 -->
+          <p v-if="state.modelsStatus === 'error'" class="text-destructive text-xs">
+            自动获取失败，请手动填写模型名称
+          </p>
+        </div>
+
+        <!-- message: 默认 hello，可修改 -->
+        <div class="flex flex-col gap-1.5">
+          <Label>测试消息</Label>
+          <Textarea v-model="state.message" placeholder="请输入要发送的测试消息" class="min-h-20" />
+        </div>
+
+        <!-- 测试结果展示 -->
+        <div v-if="state.testStatus === 'success'" class="flex flex-col gap-1.5">
+          <Label>模型响应</Label>
+          <pre
+            class="bg-muted rounded-lg p-3 text-xs whitespace-pre-wrap wrap-break-word max-h-60 overflow-auto">{{ state.testResult }}</pre>
+        </div>
+
+        <!-- 测试失败展示 -->
+        <div v-if="state.testStatus === 'error'" class="flex flex-col gap-1.5">
+          <p class="text-destructive text-xs">请求失败：{{ state.testError }}</p>
+        </div>
+
+        <DialogFooter class="mt-1">
+          <Button type="button" variant="outline" @click="handleCancel">
+            关闭
+          </Button>
+          <Button type="submit" :disabled="!canSubmit">
+            {{ state.testStatus === "loading" ? "测试中..." : "发送测试" }}
+          </Button>
+        </DialogFooter>
+      </form>
+    </DialogContent>
+  </Dialog>
+</template>
+
 <script setup lang="ts">
+import { IconInfoCircle } from "@tabler/icons-vue";
+import { Alert, AlertTitle } from "@/components/ui/alert";
 import { computed, reactive, ref, watch } from "vue";
 import OpenAI from "openai";
 import {
@@ -170,94 +268,3 @@ const canSubmit = computed(
     state.testStatus !== "loading",
 );
 </script>
-
-<template>
-  <Dialog v-model:open="dialogOpen">
-    <DialogContent class="sm:max-w-lg">
-      <DialogTitle>测试 API 密钥</DialogTitle>
-
-      <form class="flex flex-col gap-3.5" @submit.prevent="handleTest">
-        <!-- api_url 只读 -->
-        <div class="flex flex-col gap-1.5">
-          <Label>接口地址</Label>
-          <Input :model-value="item?.api_url ?? ''" readonly class="opacity-70" />
-        </div>
-
-        <!-- api_token 只读 -->
-        <div class="flex flex-col gap-1.5">
-          <Label>接口密钥</Label>
-          <Input :model-value="item?.api_token ?? ''" type="password" readonly class="opacity-70" />
-        </div>
-
-        <!-- model_name: 自动获取成功用 select，否则用 input -->
-        <div class="flex flex-col gap-1.5">
-          <div class="flex items-center justify-between">
-            <Label>模型名称</Label>
-            <!-- 右上角：自动获取文字按钮 -->
-            <Button type="button" variant="link" size="xs" class="h-auto p-0"
-              :disabled="state.modelsStatus === 'loading'" @click="fetchModels">
-              {{ state.modelsStatus === "loading" ? "获取中..." : "自动获取" }}
-            </Button>
-          </div>
-
-          <!-- 获取成功且有模型：用 select 选择 -->
-          <Select v-if="state.modelsStatus === 'success' && state.models.length > 0" v-model="state.modelName">
-            <SelectTrigger class="w-full">
-              <SelectValue placeholder="请选择模型" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="m in state.models" :key="m" :value="m">
-                {{ m }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          <!-- 获取失败或未获取：手动填写 input -->
-          <Input v-else v-model="state.modelName" placeholder="请输入模型名称，如 gpt-3.5-turbo" />
-
-          <!-- 获取失败提示 -->
-          <p v-if="state.modelsStatus === 'error'" class="text-destructive text-xs">
-            自动获取失败，请手动填写模型名称
-          </p>
-
-          <!-- 右下角：查看文档按钮 -->
-          <div v-if="item?.docs_url" class="flex justify-end">
-            <a :href="item.docs_url" target="_blank" rel="noopener noreferrer"
-              class="text-xs text-primary underline hover:opacity-80">
-              查看文档
-            </a>
-          </div>
-        </div>
-
-        <!-- message: 默认 hello，可修改 -->
-        <div class="flex flex-col gap-1.5">
-          <Label>测试消息</Label>
-          <Textarea v-model="state.message" placeholder="请输入要发送的测试消息" class="min-h-20" />
-        </div>
-
-        <!-- 测试结果展示 -->
-        <div v-if="state.testStatus === 'success'" class="flex flex-col gap-1.5">
-          <Label>模型响应</Label>
-          <pre
-            class="bg-muted rounded-lg p-3 text-xs whitespace-pre-wrap wrap-break-word max-h-60 overflow-auto">{{ state.testResult }}</pre>
-        </div>
-
-        <!-- 测试失败展示 -->
-        <div v-if="state.testStatus === 'error'" class="flex flex-col gap-1.5">
-          <p class="text-destructive text-xs">
-            请求失败：{{ state.testError }}
-          </p>
-        </div>
-
-        <DialogFooter class="mt-1">
-          <Button type="button" variant="outline" @click="handleCancel">
-            关闭
-          </Button>
-          <Button type="submit" :disabled="!canSubmit">
-            {{ state.testStatus === "loading" ? "测试中..." : "发送测试" }}
-          </Button>
-        </DialogFooter>
-      </form>
-    </DialogContent>
-  </Dialog>
-</template>

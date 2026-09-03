@@ -1,3 +1,29 @@
+<template>
+  <Dialog v-model:open="dialogOpen">
+    <DialogContent class="sm:max-w-lg">
+      <DialogTitle>{{ title }}</DialogTitle>
+
+      <form class="flex flex-col gap-3.5" @submit.prevent="handleSubmit">
+        <div v-for="group in fieldGroups" :key="group.field" class="flex flex-col gap-1.5">
+          <Label>{{ group.label }}</Label>
+          <Input v-model="draft[group.field]" :type="group.field === 'api_token' ? 'password' : 'text'"
+            :placeholder="group.placeholder" :aria-invalid="errors[group.field] ? 'true' : undefined"
+            :aria-describedby="errors[group.field] ? `${group.field}-error` : undefined"
+            @input="clearError(group.field)" />
+          <p v-if="errors[group.field]" :id="`${group.field}-error`" class="text-destructive text-xs">
+            {{ errors[group.field] }}
+          </p>
+        </div>
+
+        <DialogFooter class="mt-1">
+          <Button type="button" variant="outline" @click="handleCancel">取消</Button>
+          <Button type="submit">保存</Button>
+        </DialogFooter>
+      </form>
+    </DialogContent>
+  </Dialog>
+</template>
+
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from "vue";
 import {
@@ -123,37 +149,3 @@ function handleCancel(): void {
   dialogOpen.value = false;
 }
 </script>
-
-<template>
-  <Dialog v-model:open="dialogOpen">
-    <DialogContent class="sm:max-w-lg">
-      <DialogTitle>{{ title }}</DialogTitle>
-
-      <form class="flex flex-col gap-3.5" @submit.prevent="handleSubmit">
-        <div v-for="group in fieldGroups" :key="group.field" class="flex flex-col gap-1.5">
-          <Label>{{ group.label }}</Label>
-          <Input
-            v-model="draft[group.field]"
-            :type="group.field === 'api_token' ? 'password' : 'text'"
-            :placeholder="group.placeholder"
-            :aria-invalid="errors[group.field] ? 'true' : undefined"
-            :aria-describedby="errors[group.field] ? `${group.field}-error` : undefined"
-            @input="clearError(group.field)"
-          />
-          <p
-            v-if="errors[group.field]"
-            :id="`${group.field}-error`"
-            class="text-destructive text-xs"
-          >
-            {{ errors[group.field] }}
-          </p>
-        </div>
-
-        <DialogFooter class="mt-1">
-          <Button type="button" variant="outline" @click="handleCancel">取消</Button>
-          <Button type="submit">保存</Button>
-        </DialogFooter>
-      </form>
-    </DialogContent>
-  </Dialog>
-</template>
