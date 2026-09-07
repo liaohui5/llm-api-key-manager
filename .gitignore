@@ -66,3 +66,6 @@ docs/superpowers
 # git worktrees
 .worktrees
 worktrees
+
+# pnpm project-local store
+.pnpm-store
