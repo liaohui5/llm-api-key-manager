@@ -69,3 +69,5 @@ worktrees
 
 # pnpm project-local store
 .pnpm-store
+.codeartsdoer
+.codegraph
