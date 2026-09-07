@@ -11,17 +11,35 @@
       </Alert>
     </div>
 
-    <!-- buttons -->
-    <div class="flex items-center justify-end py-2">
-      <Button variant="outline" class="mx-2 hover:cursor-pointer" @click="importJson">
-        <span>导入JSON数据</span>
-      </Button>
-      <Button variant="outline" class="mx-2 hover:cursor-pointer" @click="exportAndDownload">
-        <span>导出到本地</span>
-      </Button>
-      <Button variant="outline" class="hover:cursor-pointer" @click="showCreateForm">
-        <span>添加新的API密钥</span>
-      </Button>
+    <!-- toolbar: 搜索 + 操作按钮 -->
+    <div class="flex items-center justify-between py-2">
+      <!-- 左侧：按提供商名称搜索输入框（内嵌清空按钮） -->
+      <div class="relative w-72">
+        <Input v-model="searchKeyword" placeholder="按提供商名称搜索" class="pr-8" />
+        <!-- @mousedown.prevent 防止点击清空按钮时输入框失焦 -->
+        <button
+          v-if="searchKeyword"
+          type="button"
+          class="absolute inset-y-0 right-1 my-auto flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+          @mousedown.prevent
+          @click="clearSearchKeyword"
+        >
+          <IconX class="h-4 w-4" />
+        </button>
+      </div>
+
+      <!-- 右侧：操作按钮组 -->
+      <div class="flex items-center">
+        <Button variant="outline" class="mx-2 hover:cursor-pointer" @click="importJson">
+          <span>导入JSON数据</span>
+        </Button>
+        <Button variant="outline" class="mx-2 hover:cursor-pointer" @click="exportAndDownload">
+          <span>导出到本地</span>
+        </Button>
+        <Button variant="outline" class="hover:cursor-pointer" @click="showCreateForm">
+          <span>添加新的API密钥</span>
+        </Button>
+      </div>
     </div>
 
     <input
@@ -34,11 +52,14 @@
 
     <!-- llm api items table -->
     <KeyList 
-      :items="items"
+      :items="filteredItems"
+      :draggable="searchKeyword.length === 0"
+      :empty-text="searchKeyword && filteredItems.length === 0 ? '未找到匹配的提供商' : undefined"
       @copy="handleCopy"
       @delete="deleteKeyItem"
       @edit="showUpdateForm"
       @test="showTestForm"
+      @reorder="reorderItems"
     />
 
     <!-- create form dialog -->
@@ -94,8 +115,10 @@ import { useLocalStorage } from "@vueuse/core";
 import KeyList from "@/components/key-list/index.vue";
 import KeyItemFormDialog from "@/components/key-item-form-dialog/index.vue";
 import TestFormDialog from "@/components/test-form-dialog/index.vue";
-import { IconInfoCircle } from "@tabler/icons-vue";
+import { IconInfoCircle, IconX } from "@tabler/icons-vue";
 import { Button } from "@/components/ui/button/index.ts";
+import { Input } from "@/components/ui/input";
+import { filterKeyItems } from "@/lib/key-item-filter";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 import { type Item, type ItemDraft } from "@/types";
@@ -120,6 +143,13 @@ const editItem = ref<Item | null>(null);
 const hasEditItem = computed(() => editItem.value !== null);
 const testItem = ref<Item | null>(null);
 const hasTestItem = computed(() => testItem.value !== null);
+
+const searchKeyword = ref("");
+const filteredItems = computed(() => filterKeyItems(items.value, searchKeyword.value));
+
+function clearSearchKeyword() {
+  searchKeyword.value = "";
+}
 
 type ImportResult =
   | { kind: "success"; added: number; updated: number; skipped: number }
@@ -167,6 +197,10 @@ function updateKeyItem(draft: ItemDraft) {
 
 function deleteKeyItem(id: string) {
   items.value = items.value.filter((item) => item.id !== id);
+}
+
+function reorderItems(reordered: Item[]) {
+  items.value = reordered;
 }
 
 function importJson() {
