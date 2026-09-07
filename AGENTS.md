@@ -8,7 +8,7 @@
 - 构建：Vite 8 + `@vitejs/plugin-vue` + `@tailwindcss/vite`（`vite.config.ts`）；生产构建先跑 `vue-tsc -b` 类型检查再 `vite build`
 - 样式：Tailwind CSS v4（CSS-first，**无 `tailwind.config.*`**）+ `tw-animate-css` + `shadcn-vue/tailwind.css`；主题 CSS 变量与明暗色板全在 `src/style.css`
 - UI 原语：shadcn-vue 2（`components.json`：style `reka-nova`、icon 库 `tabler`）+ reka-ui 2，组件本地化在 `src/components/ui/`；图标库 `@tabler/icons-vue`
-- 工具库：`@vueuse/core`（`useLocalStorage`）、`uuid`（新增条目 id）、`copy-to-clipboard`、`clsx` + `tailwind-merge` + `class-variance-authority`（拼出 `cn()`）
+- 工具库：`@vueuse/core`（`useLocalStorage`）、`uuid`（新增条目 id）、`copy-to-clipboard`、`clsx` + `tailwind-merge` + `class-variance-authority`（拼出 `cn()`）、`vue-draggable-plus`（表格拖拽排序）
 - 无路由（无 vue-router）、无状态库（无 pinia）、无服务端
 - 测试：vitest（`vitest.config.ts`：`environment: "node"`，只收集 `tests/**/*.test.ts`），仅覆盖纯函数
 - 包管理：pnpm（`pnpm-lock.yaml` lockfileVersion 9；`pnpm-workspace.yaml` 只有 `allowBuilds: vue-demi: true`）
@@ -22,7 +22,7 @@
 |------|------|
 | `pnpm dev` | 启动 Vite dev server（不做类型检查），访问 `http://localhost:5173` |
 | `pnpm build` | `vue-tsc -b` 类型检查 + `vite build`，产物到 `dist/` |
-| `pnpm test` | 运行 vitest 单测（当前 2 个文件 26 个用例） |
+| `pnpm test` | 运行 vitest 单测（当前 3 个文件 32 个用例） |
 | `pnpm preview` | 预览构建产物（需先 `pnpm build`） |
 
 > 本仓库无 `pnpm lint` / `pnpm format` 等脚本（见 `package.json` `scripts`）。
@@ -37,11 +37,12 @@
 - `src/lib/utils.ts` — `cn()`（clsx + tailwind-merge），UI 原语依赖
 - `src/lib/download.ts` — 下载工具：`downloadBlob` / `downloadText` / `triggerDownload`（隐藏 `<a id="for-emit-download">` 触发）
 - `src/lib/key-item-file.ts` — 导入导出纯函数（见下）
-- `src/components/key-list/index.vue` — 密钥表格（shadcn Table）+ 复制 / 删除（Popover 二次确认）/ 修改
+- `src/lib/key-item-filter.ts` — `filterKeyItems(items, keyword)`：按提供商名称 trim 后大小写不敏感 `includes` 过滤（见下）
+- `src/components/key-list/index.vue` — 密钥表格（shadcn Table，7 列含最左拖拽手柄列）+ 复制 / 删除（Popover 二次确认）/ 修改 / 测试 + VueDraggablePlus 拖拽排序
 - `src/components/key-item-form-dialog/index.vue` — 新增 / 修改共用的弹窗表单
 - `src/components/key-item-form-dialog/validation.ts` — 表单校验纯函数（见下）
 - `src/components/ui/` — shadcn-vue 原语 8 组：`alert/ button/ dialog/ input/ label/ popover/ table/ tooltip/`，每组含 `index.ts` 桶导出（`button`、`alert` 还导出 cva `variants`）
-- `tests/unit/validation.test.ts`、`tests/unit/key-item-file.test.ts` — 纯函数 vitest 单测（26 用例）
+- `tests/unit/validation.test.ts`、`tests/unit/key-item-file.test.ts`、`tests/unit/key-item-filter.test.ts` — 纯函数 vitest 单测（32 用例）
 - `public/` — `favicon.svg`（被 `index.html` 引用）；`vite.svg`、`icons.svg` 为模板遗留，src 中无引用
 - `dist/` — 构建产物（.gitignore 已忽略，不入库）
 
@@ -56,12 +57,19 @@
 
 ### 展示链路（`src/App.vue` → `src/components/key-list/index.vue`）
 
-- 表格 6 列：提供商 / 接口地址 / 接口密钥 / 备注说明 / 文档地址 / 操作
+- 表格 7 列：拖拽手柄 / 提供商 / 接口地址 / 接口密钥 / 备注说明 / 文档地址 / 操作
 - 长文本截断：`api_url`、`api_token` 超过 15 字符显示前 15 字符 + `...`，Tooltip 悬浮看全文
 - 复制：接口地址列两个复制按钮（复制地址本身 / 复制追加 `/chat/completions` 后缀的地址，`api_url` 以 `/` 结尾时不重复加）；密钥列一个复制按钮；均 emit `copy` 由 `App.vue` 的 `handleCopy` 调 `copy-to-clipboard`（失败仅 `console.error`）
 - 文档地址非空时显示「新标签页打开」链接（`<a target="_blank">`）
 - 操作列：修改 → emit `edit(item)`；删除 → Popover 二次确认后 emit `delete(id)`
-- 无空态：删除全部条目后只剩表头（`TableEmpty` 原语存在但未被引用）
+- 空态：删除全部条目后只剩表头；`TableEmpty` 仅在父组件传 `emptyText` 且列表为空时渲染（搜索无结果显示「未找到匹配的提供商」）
+
+### 拖动排序与搜索过滤（`src/App.vue` + `src/lib/key-item-filter.ts` + `src/components/key-list/index.vue`）
+
+- 过滤：`App.vue` 持有 `searchKeyword` ref，`filteredItems = computed(() => filterKeyItems(items.value, searchKeyword.value))` 派生展示列表传给 KeyList
+- 搜索框：工具栏行 `justify-between`，左侧输入框（内嵌 `IconX` 清空按钮，`@mousedown.prevent` 保持聚焦，仅关键字非空时显示）；右侧为导入 / 导出 / 添加按钮组
+- 拖拽排序：KeyList 内 `dragList` 副本（`watch` props.items 深同步），VueDraggablePlus `target=".drag-tbody"` 指定 `tbody` 为 Sortable 容器、`handle=".drag-handle"` 限定最左手柄列；拖拽结束 emit `reorder(newOrder)` 由 App 写回 `items.value`（`useLocalStorage` 自动持久化新顺序）
+- 搜索激活（`searchKeyword` 非空）时 `:draggable="false"` 禁用拖拽，手柄显示 `cursor-not-allowed opacity-50`
 
 ### 新增 / 修改（`src/components/key-item-form-dialog/index.vue`）
 
@@ -99,6 +107,6 @@
 5. **校验 / 导入规则修改点**：表单规则在 `validation.ts`（`validateKeyItemDraft`），导入逐条规则在 `lib/key-item-file.ts`（`normalizeEntry`）。加必填或格式规则需两处同步，并在 `tests/unit/` 补纯函数单测（`pnpm test` 目前只跑 node 环境纯函数）。
 6. **`copy` 事件签名有误导**：`key-list/index.vue` 里 declares `(e: "copy", id: string)`，实际负载是「要复制的文本」（api_url / api_token / 追加后缀后的地址），`App.vue` 侧 `handleCopy(text)` 直接复制；改这块类型时留意 payload 语义。
 7. **文案约定**：面向用户的界面文案（按钮、提示、校验错误、弹窗标题）一律中文。
-8. **构建 / 测试基线**（2026-09-03 实测）：`pnpm test` 2 个文件 26 用例全过；`pnpm build`（`vue-tsc -b` + `vite build`）通过。`tsconfig.app.json` 开了 `noUnusedLocals` 等严格项，改动后先跑 build 防 TS6133。
+8. **构建 / 测试基线**（2026-09-08 实测）：`pnpm test` 3 个文件 32 用例全过；`pnpm build`（`vue-tsc -b` + `vite build`）通过。`tsconfig.app.json` 开了 `noUnusedLocals` 等严格项，改动后先跑 build 防 TS6133。
 9. **Git 现状**：功能开发在 `dev` 分支（HEAD `f0386c91`，该提交删除了旧 `AGENTS.md` 与 `docs/superpowers/` 计划文档）；`main` 停留在初始化后不久。本文件是依据当前 `dev` 代码重新整理生成的。
 10. **README.md** 与本文档分开维护：README 面向使用说明，AGENTS 面向后续开发；README 当前在工作区有未提交更新。
